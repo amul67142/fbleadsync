@@ -17,7 +17,7 @@ export interface ParsedLeadData {
 
 export async function fetchLeadData(leadgenId: string): Promise<ParsedLeadData | null> {
   try {
-    const accessToken = process.env.META_PAGE_ACCESS_TOKEN;
+    const accessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim();
     if (!accessToken) {
       throw new Error("META_PAGE_ACCESS_TOKEN is not defined in env variables.");
     }

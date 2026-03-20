@@ -1,0 +1,76 @@
+{
+  "data": [
+    {
+      "id": "903842885435385",
+      "locale": "en_US",
+      "name": "Anniversary Offer",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "25282682431390629",
+      "locale": "en_US",
+      "name": "Real Estate | High Volume-New-1",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "818418631055529",
+      "locale": "en_US",
+      "name": "Real Estate | High Volume-New",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "643884088815050",
+      "locale": "en_US",
+      "name": "11/June/2025 - Lead Form",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1829542204261385",
+      "locale": "en_US",
+      "name": "Real Estate | Lucknow",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "713928434566763",
+      "locale": "en_US",
+      "name": "Real Estate | Chandigrah",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1439924087417160",
+      "locale": "en_US",
+      "name": "DIgital Marketing Services | USA",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1360830655164694",
+      "locale": "en_US",
+      "name": "DIgital Marketing Services | High Volume",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1285945365949915",
+      "locale": "en_US",
+      "name": "Real Estate | High Volume",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "980881823939901",
+      "locale": "en_US",
+      "name": "Video Production Services | High Volume",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "2449242341942124",
+      "locale": "en_IN",
+      "name": "Standard form",
+      "status": "ACTIVE"
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "QVFIUzdxb1NIa3hkQ2hkcFpha2JaTWMwajI4eFA1ZA0c0Y25QNXQzNFdvRHpKME1lcFpodW9xXzVGYWpXT1ZA2V0dFX2cyNlBMTWlSblNYOHB5SkFUNUY2UGN3",
+      "after": "QVFIU2o3WmFaV05TQm1xYUlPZA0I5d1FRaldZAYkFkV20yeGwxLVlXX3AtZATZAlbER3M0g1U2Q3c1RQT2NBUHZA3b1JNS3JZAb3VhS3ZADbWFaR2xLSXhySHZAuZAndB"
+    }
+  }
+}
