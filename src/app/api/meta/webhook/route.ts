@@ -13,7 +13,6 @@ export async function GET(request: Request) {
 
   if (mode === 'subscribe' && token === verifyToken) {
     console.log('Webhook verified successfully.');
-    // Must return challenge exactly as provided, plain text
     return new NextResponse(challenge, { status: 200 });
   }
 
@@ -34,10 +33,12 @@ export async function POST(request: Request) {
               const leadgenId = change.value.leadgen_id;
               const pageId = change.value.page_id;
 
-              if (!leadgenId) continue;
+              if (!leadgenId) {
+                continue;
+              }
 
               // Extract actual lead info from Graph API
-              const leadData = await fetchLeadData(leadgenId);
+              const leadData = await fetchLeadData(leadgenId, change.value.form_id);
               
               if (leadData) {
                 // Upsert to bypass duplicate events securely
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
                     phone: leadData.phone,
                     adName: leadData.adName,
                     adId: leadData.adId,
-                    formId: leadData.formId,
+                    formId: leadData.formId || change.value.form_id,
                     pageId: pageId,
                   },
                 });
@@ -62,11 +63,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Always yield 200 OK so Meta stops retrying
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
     console.error('Webhook POST Error:', error);
-    // Important: Still return 200 to Meta, or they will disable the webhook after enough failures
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 }
