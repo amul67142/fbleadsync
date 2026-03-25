@@ -64,6 +64,7 @@ export async function POST(request: Request) {
                     formName: leadData.formName,
                     pageId: pageId,
                     pageName: leadData.pageName,
+                    createdAt: leadData.createdAt ? new Date(leadData.createdAt) : new Date()
                   },
                 });
                 console.log('Lead saved/upserted successfully. ID:', result.id);

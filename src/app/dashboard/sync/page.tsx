@@ -79,11 +79,12 @@ export default function SyncPage() {
     }
   }, [toast]);
 
-  async function handleSync() {
-    if (!selectedForm || !selectedPage) return;
+  async function handleSync(formIdOverride?: string) {
+    const activeFormId = formIdOverride || selectedForm;
+    if (!activeFormId || !selectedPage) return;
 
     const page = pages.find(p => p.id === selectedPage);
-    const form = forms.find(f => f.id === selectedForm);
+    const form = forms.find(f => f.id === activeFormId);
 
     try {
       setSyncing(true);
@@ -93,9 +94,9 @@ export default function SyncPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pageId: selectedPage,
-          formId: selectedForm,
+          formId: activeFormId,
           pageName: page?.name,
-          formName: form?.name
+          formName: formIdOverride === 'all' ? 'All Portfolio Forms' : form?.name
         })
       });
       const data = await res.json();
@@ -335,9 +336,9 @@ export default function SyncPage() {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="pt-4 pb-8 flex flex-col items-center border-t border-slate-50">
+              <CardFooter className="pt-4 pb-8 flex flex-col items-center gap-4 border-t border-slate-50">
                 <Button 
-                  onClick={handleSync} 
+                  onClick={() => handleSync()} 
                   disabled={!selectedForm || syncing} 
                   className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest shadow-xl shadow-blue-200/50 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100 group"
                 >
@@ -352,6 +353,16 @@ export default function SyncPage() {
                       Historical Meta Sync
                     </>
                   )}
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => handleSync('all')} 
+                  disabled={!selectedPage || syncing} 
+                  className="w-full h-12 rounded-2xl border-2 border-slate-100 text-slate-600 font-bold hover:bg-slate-50 transition-all disabled:opacity-50 group"
+                >
+                  <RefreshCcw className={cn("mr-2 h-4 w-4 text-slate-400", syncing && "animate-spin")} />
+                  Sync All Portfolio Data
                 </Button>
               </CardFooter>
             </Card>

@@ -35,11 +35,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'formId and pageId are required' }, { status: 400 });
     }
 
-    const leads = await getFormLeads(formId, pageId);
+    const allLeads = [];
+    
+    if (formId === 'all') {
+      console.log('Starting All-Leads sync across all forms for page:', pageId);
+      const forms = await getForms(pageId);
+      for (const form of forms) {
+        console.log(`Fetching leads for form: ${form.name} (${form.id})`);
+        try {
+          const leads = await getFormLeads(form.id, pageId);
+          // Attach formName to each lead for the upsert loop
+          leads.forEach((l: any) => { l.formName = form.name; });
+          allLeads.push(...leads);
+        } catch (e) {
+          console.error(`Error fetching leads for form ${form.id}:`, e);
+        }
+      }
+    } else {
+      const leads = await getFormLeads(formId, pageId);
+      leads.forEach((l: any) => { l.formName = formName; });
+      allLeads.push(...leads);
+    }
+
     let savedCount = 0;
     
-    for (const leadData of leads) {
-      // Ensure we have a valid ID
+    for (const leadData of allLeads) {
       const leadgenId = leadData.leadgenId;
       if (!leadgenId) continue;
 
@@ -49,7 +69,7 @@ export async function POST(request: Request) {
           where: { leadgenId },
           update: {
             pageName: pageName || null,
-            formName: formName || null
+            formName: leadData.formName || formName || null
           },
           create: {
             leadgenId,
@@ -58,22 +78,23 @@ export async function POST(request: Request) {
             phone: leadData.phone || null,
             adName: leadData.adName || null,
             adId: leadData.adId || null,
-            formId: leadData.formId || null,
-            formName: formName || null,
+            formId: leadData.formId || formId || null,
+            formName: leadData.formName || formName || null,
             pageId: pageId || null,
             pageName: pageName || null,
-            status: 'new'
+            status: 'new',
+            createdAt: leadData.createdAt ? new Date(leadData.createdAt) : new Date()
           }
         });
         savedCount++;
-      } catch {
-        console.error(`Error saving lead ${leadgenId}`);
+      } catch (err) {
+        console.error(`Error saving lead ${leadgenId}:`, err);
       }
     }
 
     return NextResponse.json({ 
       success: true, 
-      count: leads.length,
+      count: allLeads.length,
       saved: savedCount,
       message: `Successfully synced ${savedCount} leads.`
     });

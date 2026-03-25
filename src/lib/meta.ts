@@ -18,6 +18,7 @@ export interface ParsedLeadData {
   formName?: string | null;
   pageName?: string | null;
   leadgenId?: string | null;
+  createdAt?: string | null;
 }
 
 /**
@@ -251,6 +252,7 @@ export function parseMetaLead(data: any): ParsedLeadData {
     adName: data.ad_name || null,
     adId: data.ad_id || null,
     formId: data.form_id || null,
-    leadgenId: data.id // Add leadgenId if it exists in data
+    leadgenId: data.id, // Add leadgenId if it exists in data
+    createdAt: data.created_time || null
   };
 }

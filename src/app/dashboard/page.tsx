@@ -57,9 +57,10 @@ export default async function DashboardPage({
   const uniqueStatuses = Array.from(new Set(allLeads.map(l => l.status).filter(Boolean))) as string[];
 
   // Map to match the interface
-  const leads: Lead[] = leadsRaw.map(lead => ({
+  const leads: Lead[] = (leadsRaw as any[]).map(lead => ({
     ...lead,
     createdAt: lead.createdAt,
+    formName: lead.formName,
   }));
 
   // Calculate Stats
@@ -121,10 +122,18 @@ export default async function DashboardPage({
 
         {/* Main Table */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 px-2">
-            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-            <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Live Lead Feed</h2>
-            <span className="ml-auto text-xs font-bold text-slate-300">Showing {leads.length} results</span>
+          <div className="flex items-center gap-3 px-2">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Live Lead Feed</h2>
+            </div>
+            <div className="h-px flex-grow bg-slate-100" />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Result Count</span>
+              <span className="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg shadow-indigo-100 min-w-[30px] text-center">
+                {leads.length}
+              </span>
+            </div>
           </div>
           
           <div className="border-2 border-slate-100 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/20 bg-white">
