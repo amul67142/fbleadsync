@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { useRouter } from 'next/navigation';
 import { 
@@ -53,7 +53,26 @@ function getRelativeTime(date: string | Date) {
 
 export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const router = useRouter();
+  const deleteRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to cancel delete confirmation
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const handler = (e: MouseEvent) => {
+      if (deleteRef.current && !deleteRef.current.contains(e.target as Node)) {
+        setConfirmingDelete(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    // Auto-cancel after 3 seconds
+    const timer = setTimeout(() => setConfirmingDelete(false), 3000);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      clearTimeout(timer);
+    };
+  }, [confirmingDelete]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -86,9 +105,14 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this lead?')) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
 
+    // Second click — actually delete
     setIsUpdating(true);
+    setConfirmingDelete(false);
     try {
       const res = await fetch(`/api/leads/${lead.id}`, {
         method: 'DELETE',
@@ -166,13 +190,24 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
         {getRelativeTime(lead.createdAt)}
       </TableCell>
       <TableCell className="text-right">
-        <button
-          onClick={handleDelete}
-          className="text-slate-300 hover:text-rose-500 p-2.5 rounded-xl transition-all hover:bg-rose-50 active:scale-95 opacity-40 group-hover/row:opacity-100"
-          title="Delete Lead"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div ref={deleteRef} className="inline-flex">
+          {confirmingDelete ? (
+            <button
+              onClick={handleDelete}
+              className="bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full transition-all hover:bg-rose-600 active:scale-95 animate-in zoom-in-95 duration-150"
+            >
+              Sure?
+            </button>
+          ) : (
+            <button
+              onClick={handleDelete}
+              className="text-slate-300 hover:text-rose-500 p-2.5 rounded-xl transition-all hover:bg-rose-50 active:scale-95 opacity-40 group-hover/row:opacity-100"
+              title="Delete Lead"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
