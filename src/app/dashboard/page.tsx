@@ -1,14 +1,7 @@
 import { prisma } from '@/lib/prisma';
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import AutoRefresh from './AutoRefresh';
-import LeadRow from './LeadRow';
 import Filters from './Filters';
+import LeadTableClient from './LeadTableClient';
 import { Filter } from 'lucide-react';
 
 interface Lead {
@@ -24,7 +17,7 @@ interface Lead {
   pageId: string | null;
   pageName: string | null;
   status: string;
-  createdAt: Date;
+  createdAt: string; // Serialized for Client Component
 }
 
 export const dynamic = 'force-dynamic';
@@ -32,45 +25,79 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { pageName?: string; status?: string };
+  searchParams: { 
+    pageName?: string; 
+    status?: string; 
+    search?: string; 
+    page?: string;
+    formName?: string;
+  };
 }) {
-  const { pageName, status } = searchParams;
+  const { pageName, status, search, page, formName } = searchParams;
+  const pageNumber = Math.max(1, parseInt(page || '1') || 1);
+  const limit = 20;
+  const skip = (pageNumber - 1) * limit;
 
   // Build filter object for Prisma
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
   if (pageName && pageName !== 'all') where.pageName = pageName;
   if (status && status !== 'all') where.status = status;
+  if (formName && formName !== 'all') where.formName = formName;
+  
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { phone: { contains: search, mode: 'insensitive' } },
+    ];
+  }
 
-  // Fetch leads with filters applied
-  const leadsRaw = await prisma.lead.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-  });
+  // Fetch leads with filters and pagination
+  const [leadsRaw, filteredCount] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.lead.count({ where })
+  ]);
 
   // Fetch options for filters from ALL leads (unfiltered)
   const allLeads = await prisma.lead.findMany({
-    select: { pageName: true, status: true, createdAt: true },
-  });
+    select: { pageName: true, status: true, formName: true } as any,
+  }) as any[];
 
   const uniquePages = Array.from(new Set(allLeads.map(l => l.pageName).filter(Boolean))) as string[];
   const uniqueStatuses = Array.from(new Set(allLeads.map(l => l.status).filter(Boolean))) as string[];
+  
+  // Forms filtered by current page
+  const formsForSelectedPage = pageName && pageName !== 'all'
+    ? Array.from(new Set(allLeads.filter((l: any) => l.pageName === pageName).map((l: any) => l.formName).filter(Boolean))) as string[]
+    : [];
 
-  // Map to match the interface
+  const totalLeads = await prisma.lead.count();
+
+  // Map to match the interface and SERIALIZE DATES
   const leads: Lead[] = (leadsRaw as any[]).map(lead => ({
     ...lead,
-    createdAt: lead.createdAt,
+    createdAt: lead.createdAt.toISOString(), // String for props
     formName: lead.formName,
   }));
 
   // Calculate Stats
-  const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   
-  const totalCount = allLeads.length;
-  const recentCount = allLeads.filter(l => l.createdAt >= twentyFourHoursAgo).length;
-  const qualifiedCount = allLeads.filter(l => l.status === 'qualified' || l.status === 'interested').length;
-  const conversionRate = totalCount > 0 ? Math.round((qualifiedCount / totalCount) * 100) : 0;
+  const recentCount = await prisma.lead.count({
+    where: { createdAt: { gte: twentyFourHoursAgo } }
+  });
+  
+  const qualifiedCount = await prisma.lead.count({
+    where: { status: { in: ['qualified', 'interested'] } }
+  });
+  
+  const conversionRate = totalLeads > 0 ? Math.round((qualifiedCount / totalLeads) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-slate-50/30 pb-20">
@@ -79,7 +106,7 @@ export default async function DashboardPage({
 
         {/* Header & Stats */}
         <div className="space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
                 Leads Overview
@@ -89,7 +116,13 @@ export default async function DashboardPage({
               </p>
             </div>
             
-            <Filters pages={uniquePages} statuses={uniqueStatuses} />
+            <Filters 
+              pages={uniquePages} 
+              forms={formsForSelectedPage}
+              statuses={uniqueStatuses} 
+              totalLeads={totalLeads}
+              filteredCount={filteredCount}
+            />
           </div>
 
           {/* Quick Stats Bar */}
@@ -97,7 +130,7 @@ export default async function DashboardPage({
             <div className="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm hover:shadow-md transition-all">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Leads</p>
               <div className="flex items-baseline gap-2">
-                <h3 className="text-4xl font-black text-slate-900">{totalCount}</h3>
+                <h3 className="text-4xl font-black text-slate-900">{totalLeads}</h3>
                 <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">All Time</span>
               </div>
             </div>
@@ -120,7 +153,7 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        {/* Main Table */}
+        {/* Main Table Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-3 px-2">
             <div className="flex items-center gap-2">
@@ -129,50 +162,28 @@ export default async function DashboardPage({
             </div>
             <div className="h-px flex-grow bg-slate-100" />
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Result Count</span>
-              <span className="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg shadow-indigo-100 min-w-[30px] text-center">
-                {leads.length}
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Showing</span>
+              <span className="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg shadow-indigo-100">
+                {Math.min(skip + 1, filteredCount)}-{Math.min(skip + limit, filteredCount)} of {filteredCount}
               </span>
             </div>
           </div>
           
-          <div className="border-2 border-slate-100 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/20 bg-white">
-            <div className="overflow-x-auto">
-              {leads.length > 0 ? (
-                <Table className="min-w-[1000px]">
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="hover:bg-transparent border-slate-100">
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Contact</TableHead>
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Phone</TableHead>
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Email</TableHead>
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Source Form</TableHead>
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Meta Page</TableHead>
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Status</TableHead>
-                      <TableHead className="py-4 font-black uppercase tracking-widest text-[10px] text-slate-400">Entry Time</TableHead>
-                      <TableHead className="py-4 text-right font-black uppercase tracking-widest text-[10px] text-slate-400">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leads.map((lead: Lead) => (
-                      <LeadRow key={lead.id} lead={lead} />
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="py-32 text-center space-y-6">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200">
-                    <Filter className="h-8 w-8 text-slate-200" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-slate-900">No leads found</h3>
-                    <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium">
-                      Try adjusting filters or wait for new Meta events.
-                    </p>
-                  </div>
-                </div>
-              )}
+          {leads.length > 0 ? (
+            <LeadTableClient leads={leads} />
+          ) : (
+            <div className="bg-white border-2 border-slate-100 rounded-3xl py-32 text-center space-y-6 shadow-sm">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200">
+                <Filter className="h-8 w-8 text-slate-200" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-slate-900">No leads found</h3>
+                <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium">
+                  Try adjusting filters or searching for something else.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

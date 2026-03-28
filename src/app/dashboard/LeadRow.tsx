@@ -11,6 +11,13 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+
+interface LeadRowProps {
+  lead: Lead;
+  isSelected: boolean;
+  onSelect: (id: number, checked: boolean) => void;
+}
 
 interface Lead {
   id: number;
@@ -25,10 +32,10 @@ interface Lead {
   pageId: string | null;
   pageName: string | null;
   status: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
-function getRelativeTime(date: Date) {
+function getRelativeTime(date: string | Date) {
   const diffInMs = new Date().getTime() - new Date(date).getTime();
   const diffInSecs = Math.floor(diffInMs / 1000);
   const diffInMins = Math.floor(diffInSecs / 60);
@@ -44,7 +51,7 @@ function getRelativeTime(date: Date) {
   return `${diffInDays}d ago`;
 }
 
-export default function LeadRow({ lead }: { lead: Lead }) {
+export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const router = useRouter();
 
@@ -99,20 +106,32 @@ export default function LeadRow({ lead }: { lead: Lead }) {
   return (
     <TableRow className={cn(
       "group transition-all duration-300 hover:bg-slate-50/80 border-transparent hover:border-slate-100",
+      isSelected && "bg-indigo-50/30 hover:bg-indigo-50/50",
       isUpdating && "opacity-50 pointer-events-none"
     )}>
-      <TableCell className="py-4">
-        <div className="flex flex-col">
-          <span className="font-bold text-slate-900 tracking-tight">{lead.name || 'N/A'}</span>
-          <span className="text-xs text-slate-400 font-medium">Verified Customer</span>
+      <TableCell className="py-5">
+        <div className="flex items-center justify-center">
+          <Checkbox 
+            checked={isSelected}
+            onChange={(e) => onSelect(lead.id, (e.target as HTMLInputElement).checked)}
+          />
         </div>
       </TableCell>
-      <TableCell className="font-medium text-slate-600 tracking-tight">{lead.phone || 'N/A'}</TableCell>
-      <TableCell className="text-slate-500 font-medium">{lead.email || 'N/A'}</TableCell>
-      <TableCell className="max-w-[180px]">
-        <div className="flex flex-col gap-0.5">
+      <TableCell className="py-5">
+        <div className="flex flex-col">
+          <span className="font-bold text-slate-900 tracking-tight">{lead.name || 'N/A'}</span>
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Verified Customer</span>
+        </div>
+      </TableCell>
+      <TableCell className="py-5 font-medium text-slate-600 tracking-tight">{lead.phone || 'N/A'}</TableCell>
+      <TableCell className="py-5 text-slate-500 font-medium">{lead.email || 'N/A'}</TableCell>
+      <TableCell className="py-5 max-w-[200px]">
+        <div className="flex flex-col gap-0.5 group/form">
           <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none">Form</span>
-          <span className="truncate text-sm font-semibold text-slate-500" title={lead.formName || lead.formId || ''}>
+          <span 
+            className="truncate text-sm font-semibold text-slate-500 cursor-help" 
+            title={lead.formName || lead.formId || 'No form name'}
+          >
             {lead.formName || lead.formId || 'N/A'}
           </span>
         </div>

@@ -8,20 +8,20 @@ datasource db {
 }
 
 model Lead {
-  id          Int      @id @default(autoincrement())
-  leadgenId   String   @unique
-  name        String?
-  email       String?
-  phone       String?
-  adName      String?
-  adId        String?
-  formId      String?
-  formName    String?
-  pageId      String?
-  pageName    String?
-  status      String   @default("new") // new | contacted | qualified | lost
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  leadgenId String   @unique
+  name      String?
+  email     String?
+  phone     String?
+  adName    String?
+  adId      String?
+  formId    String?
+  pageId    String?
+  pageName  String?
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  formName  String?
 }
 
 model Setting {
