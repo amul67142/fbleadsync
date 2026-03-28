@@ -105,8 +105,8 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
 
   return (
     <TableRow className={cn(
-      "group transition-all duration-300 hover:bg-slate-50/80 border-transparent hover:border-slate-100",
-      isSelected && "bg-indigo-50/30 hover:bg-indigo-50/50",
+      "group/row transition-all duration-200 border-b border-slate-100 hover:!bg-slate-50",
+      isSelected && "!bg-indigo-50/40 hover:!bg-indigo-50/60",
       isUpdating && "opacity-50 pointer-events-none"
     )}>
       <TableCell className="py-5">
@@ -168,7 +168,7 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
       <TableCell className="text-right">
         <button
           onClick={handleDelete}
-          className="text-slate-300 hover:text-rose-500 p-2.5 rounded-full transition-all hover:bg-rose-50 opacity-0 group-hover:opacity-100 active:scale-95"
+          className="text-slate-300 hover:text-rose-500 p-2.5 rounded-xl transition-all hover:bg-rose-50 active:scale-95 opacity-40 group-hover/row:opacity-100"
           title="Delete Lead"
         >
           <Trash2 className="h-4 w-4" />
