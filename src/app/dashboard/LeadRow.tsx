@@ -12,6 +12,16 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Loader2, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface LeadRowProps {
   lead: Lead;
@@ -53,26 +63,8 @@ function getRelativeTime(date: string | Date) {
 
 export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const router = useRouter();
-  const deleteRef = useRef<HTMLDivElement>(null);
-
-  // Click outside to cancel delete confirmation
-  useEffect(() => {
-    if (!confirmingDelete) return;
-    const handler = (e: MouseEvent) => {
-      if (deleteRef.current && !deleteRef.current.contains(e.target as Node)) {
-        setConfirmingDelete(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    // Auto-cancel after 3 seconds
-    const timer = setTimeout(() => setConfirmingDelete(false), 3000);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      clearTimeout(timer);
-    };
-  }, [confirmingDelete]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -104,15 +96,12 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
+  const handleDeleteClick = () => {
+    setIsDeleteDialogOpen(true);
+  };
 
-    // Second click — actually delete
+  const performDelete = async () => {
     setIsUpdating(true);
-    setConfirmingDelete(false);
     try {
       const res = await fetch(`/api/leads/${lead.id}`, {
         method: 'DELETE',
@@ -128,6 +117,7 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
   };
 
   return (
+    <>
     <TableRow className={cn(
       "group/row transition-all duration-200 border-b border-slate-100 hover:!bg-slate-50",
       isSelected && "!bg-indigo-50/40 hover:!bg-indigo-50/60",
@@ -190,33 +180,55 @@ export default function LeadRow({ lead, isSelected, onSelect }: LeadRowProps) {
         {getRelativeTime(lead.createdAt)}
       </TableCell>
       <TableCell className="text-right">
-        <div ref={deleteRef} className="inline-flex">
-          {confirmingDelete ? (
-            <button
-              onClick={handleDelete}
-              className="bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full transition-all hover:bg-rose-600 active:scale-95 animate-in zoom-in-95 duration-150"
-            >
-              Sure?
-            </button>
-          ) : (
-            <button
-              onClick={handleDelete}
-              className="text-slate-300 hover:text-rose-500 p-2.5 rounded-xl transition-all hover:bg-rose-50 active:scale-95 opacity-40 group-hover/row:opacity-100"
-              title="Delete Lead"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        <button
+          onClick={handleDeleteClick}
+          className="text-slate-300 hover:text-rose-500 p-2.5 rounded-xl transition-all hover:bg-rose-50 active:scale-95 opacity-40 group-hover/row:opacity-100"
+          title="Delete Lead"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
       </TableCell>
     </TableRow>
-  );
-}
-
-function Trash2({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
-    </svg>
+    
+    <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <DialogContent className="sm:max-w-md rounded-3xl border-2 border-slate-100 shadow-2xl">
+        <DialogHeader className="space-y-3">
+          <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mb-2 mx-auto sm:mx-0">
+            <Trash2 className="h-6 w-6 text-rose-500" />
+          </div>
+          <DialogTitle className="text-2xl font-black">Delete Lead?</DialogTitle>
+          <DialogDescription className="text-slate-500 font-medium">
+            Are you sure you want to permanently delete <strong className="text-slate-900">{lead.name || 'this lead'}</strong>? 
+            This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsDeleteDialogOpen(false)}
+            disabled={isUpdating}
+            className="rounded-xl font-bold font-sm border-2"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={performDelete}
+            disabled={isUpdating}
+            className="rounded-xl font-bold font-sm shadow-md transition-all"
+          >
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Yes, delete lead
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

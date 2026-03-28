@@ -9,6 +9,14 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +47,7 @@ interface LeadTableClientProps {
 export default function LeadTableClient({ leads }: LeadTableClientProps) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -58,10 +67,12 @@ export default function LeadTableClient({ leads }: LeadTableClientProps) {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDeleteClick = () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} leads?`)) return;
+    setIsDeleteDialogOpen(true);
+  };
 
+  const performBulkDelete = async () => {
     setIsDeleting(true);
     try {
       const res = await fetch('/api/leads/bulk', {
@@ -93,6 +104,7 @@ export default function LeadTableClient({ leads }: LeadTableClientProps) {
       });
     } finally {
       setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -113,9 +125,9 @@ export default function LeadTableClient({ leads }: LeadTableClientProps) {
               <Button 
                 variant="destructive" 
                 size="sm" 
-                onClick={handleBulkDelete}
+                onClick={handleBulkDeleteClick}
                 disabled={isDeleting}
-                className="rounded-full px-6 font-black uppercase tracking-widest text-[10px] h-10 hover:scale-105 transition-all"
+                className="rounded-full px-6 font-black uppercase tracking-widest text-[10px] h-10 hover:scale-105 transition-all shadow-lg shadow-rose-500/20"
               >
                 {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -173,6 +185,46 @@ export default function LeadTableClient({ leads }: LeadTableClientProps) {
           </Table>
         </div>
       </div>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-3xl border-2 border-slate-100 shadow-2xl">
+          <DialogHeader className="space-y-3">
+            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mb-2 mx-auto sm:mx-0">
+              <Trash2 className="h-6 w-6 text-rose-500" />
+            </div>
+            <DialogTitle className="text-2xl font-black">Delete Selected Leads?</DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">
+              You are about to permanently delete <strong className="text-slate-900">{selectedIds.length} lead{selectedIds.length !== 1 ? 's' : ''}</strong>. 
+              This action cannot be undone and the data will be removed from your database forever.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+              className="rounded-xl font-bold font-sm border-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={performBulkDelete}
+              disabled={isDeleting}
+              className="rounded-xl font-bold font-sm shadow-md transition-all"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Yes, delete {selectedIds.length} lead{selectedIds.length !== 1 ? 's' : ''}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
